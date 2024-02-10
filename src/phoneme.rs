@@ -1,4 +1,4 @@
-pub enum IPA {
+pub enum Phoneme {
     AA,
     AE,
     AH,
@@ -54,7 +54,7 @@ pub enum IPA {
 }
 
 
-impl IPA {
+impl Phoneme {
     pub fn from_arpabet(arpabet: &str) -> Self {
         match arpabet {
             "AA" => Self::AA,
@@ -114,7 +114,7 @@ impl IPA {
         }
     }
 
-    pub fn to_char(self) -> &'static str {
+    pub fn to_ipa(self) -> &'static str {
         match self {
             Self::AA => "ɑ", // ɑ or ɒ
             Self::AE => "æ",
