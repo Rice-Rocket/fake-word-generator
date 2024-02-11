@@ -1,14 +1,13 @@
-use std::{collections::{hash_map::Entry, HashMap}, env, fs::{self, File}, io::Write};
+use std::{collections::{hash_map::Entry, HashMap}, env, fs::{self, File}, io::Write, path::Path};
 
-use color_print::{cprint, cprintln};
-use indicatif::{ProgressBar, ProgressIterator, ProgressStyle};
+use indicatif::ProgressIterator;
 use serde::{Deserialize, Serialize};
 
-use crate::{graph::NodeData, syllablize::SyllablizedPhonemes};
+use crate::{graph::NodeData, logger::{ProgressBarElements, TerminalLogger, WorkIndex, WorkMessage}, syllablize::SyllablizedPhonemes};
 
 #[derive(Serialize, Deserialize)]
 pub struct SyllableConnections {
-    connections: HashMap<NodeData, (NodeData, usize)>,
+    pub connections: HashMap<NodeData, (NodeData, usize)>,
 }
 
 impl SyllableConnections {
@@ -17,32 +16,36 @@ impl SyllableConnections {
     fn cache_file() -> String {
         env::current_dir().unwrap().to_str().unwrap().to_owned() + "/" + Self::CACHE_FILE
     }
+    pub fn try_read_cache() -> Result<Vec<u8>, std::io::Error> {
+        fs::read(Self::cache_file())
+    }
+    pub fn cache_exists() -> bool {
+        Path::new(&Self::cache_file()).exists()
+    }
 
-    pub fn new(syl_phones: &SyllablizedPhonemes) {
+    pub fn new(syl_phones: &SyllablizedPhonemes, logger: &mut TerminalLogger) {
         let mut connections = Self { connections: HashMap::new() };
     
-        if let Ok(contents) = fs::read(Self::cache_file()) {
-            cprintln!("  <green, bold>Reading</green, bold> Syllable Connections Cache File...");
+        if let Ok(contents) = Self::try_read_cache() {
             connections.load(contents);
         } else {
-            cprintln!("  <yellow, bold>Cache File Not Found</yellow, bold>, Rebuilding Syllable Connections...");
-            connections.build(syl_phones);
-            cprint!("  <green, bold>Finished</green, bold> Building Syllable Connections                     ");
+            connections.build(syl_phones, logger);
         }
     }
     
-    fn load(&mut self, contents: Vec<u8>) {
-        let de: SyllableConnections = ron::de::from_bytes(contents.as_slice())
-            .expect("Failed to parse file");
-        cprint!("  <green, bold>Finished</green, bold> Reading Syllable Connections Cache File");
+    pub fn load(&mut self, contents: Vec<u8>) -> Option<()> {
+        let de: SyllableConnections = match ron::de::from_bytes(contents.as_slice()) {
+            Ok(d) => d,
+            Err(_) => return None
+        };
         *self = de;
+        Some(())
     }
 
-    fn build(&mut self, syl_phones: &SyllablizedPhonemes) {
-        cprintln!("    <bold>[1/2]</bold> <green, bold>Building</green, bold> Syllable Connections...");
+    pub fn build(&mut self, syl_phones: &SyllablizedPhonemes, logger: &mut TerminalLogger) {
+        let build_work = logger.begin_work(WorkMessage::new("Building", "Syllable Connections", WorkIndex::new(1, 2)));
 
-        let bar = ProgressBar::new(syl_phones.words.len() as u64)
-            .with_style(ProgressStyle::with_template("  [{human_pos}/{human_len} ({percent}%)] | Elapsed: {elapsed} | ETA: {eta} {bar:50.green/gray}").unwrap());
+        let bar = logger.create_progress(syl_phones.words.len() as u64, ProgressBarElements::PERCENTAGE | ProgressBarElements::ETA);
 
         for (_word, syllables) in syl_phones.words.iter().progress_with(bar) {
             if syllables.len() <= 1 { continue };
@@ -63,10 +66,14 @@ impl SyllableConnections {
             }
         }
 
-        cprintln!("    <bold>[2/2]</bold> <green, bold>Writing</green, bold> Syllable Connections to File...");
+        logger.finish_work(build_work);
+        let writing_work = logger.begin_work(WorkMessage::new("Writing", "Syllable Connections to File", WorkIndex::new(2, 2)));
+
         let mut file = File::create(Self::cache_file()).unwrap();
         file.write_all(ron::ser::to_string_pretty(&self, ron::ser::PrettyConfig::default()).unwrap().as_bytes())
             .expect("Failed to write to file");
+
+        logger.finish_work(writing_work);
     }
 
     fn add_edge(&mut self, from: NodeData, to: NodeData) {
