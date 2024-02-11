@@ -13,3 +13,11 @@ color-print = "0.3.5"
 indicatif = { version = "0.17.8", features = [ "rayon" ] }
 rayon = "1.8.1"
 rand = "0.8.5"
+# tts_rust = "0.3.5"
+tts = "0.26.0"
+
+[target.'cfg(any(target_os = "macos", target_os = "ios"))'.dependencies]
+cocoa-foundation = "0.1"
+core-foundation = "0.9"
+libc = "0.2"
+objc = { version = "0.2", features = ["exception"] }

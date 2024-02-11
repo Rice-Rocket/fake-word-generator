@@ -124,15 +124,15 @@ impl Syllable {
         Syllable::from_phonemes(phonemes)
     }
 
-    pub fn to_ipa(self) -> String {
+    pub fn to_ipa(&self) -> String {
         let mut result = String::new();
-        for phoneme in self.phonemes {
+        for phoneme in self.phonemes.iter() {
             result += phoneme.to_ipa();
         };
         result
     }
     
-    pub fn to_english(self) -> String {
+    pub fn to_english(&self) -> String {
         let mut result = String::new();
         let mut ipa = self.to_ipa();
 
@@ -196,11 +196,15 @@ impl Syllable {
                     vowel.push(phone.clone());
                 } else {
                     coda.push(phone.clone());
-                    state = SyllablePart::Coda;
+                    state = SyllablePart::Coda { layer: 1 };
                 }
             } else { // state == SyllablePart::Coda
                 if phone.is_consonant() {
                     coda.push(phone.clone());
+                    state = match state {
+                        SyllablePart::Coda { layer } => SyllablePart::Coda { layer: layer + 1 },
+                        _ => { unreachable!() }
+                    };
                 } else {
                     return None;
                 }

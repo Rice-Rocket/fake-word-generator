@@ -320,15 +320,33 @@ impl Phoneme {
 pub enum SyllablePart {
     Onset,
     Nucleus,
-    Coda
+    Coda { layer: usize },
 }
 
 impl SyllablePart {
     pub fn next(self) -> Option<Self> {
         match self {
             Self::Onset => Some(Self::Nucleus),
-            Self::Nucleus => Some(Self::Coda),
-            Self::Coda => None,
+            Self::Nucleus => Some(Self::Coda { layer: 1 }),
+            Self::Coda { layer: _ } => None,
+        }
+    }
+    pub fn is_onset(self) -> bool {
+        match self {
+            Self::Onset => true,
+            _ => false,
+        }
+    }
+    pub fn is_nucleus(self) -> bool {
+        match self {
+            Self::Nucleus => true,
+            _ => false,
+        }
+    }
+    pub fn is_coda(self) -> bool {
+        match self {
+            Self::Coda { layer: _ } => true,
+            _ => false,
         }
     }
 }

@@ -141,7 +141,7 @@ impl SonorityGraph {
                     Some(phone) => NodeData::Phoneme(*phone),
                     None => NodeData::Stop,
                 });
-                self.update_graph_part(SyllablePart::Coda, coda, NodeData::Stop);
+                self.update_graph_part(SyllablePart::Coda { layer: 1 }, coda, NodeData::Stop);
             }
         }
 
@@ -162,13 +162,31 @@ impl SonorityGraph {
             self.add_edge(from_node_id, to_node_id);
         }
 
-        let (mut cur_id, mut node_ids): (NodeID, Vec<NodeID>) = match phonemes.get(0) {
-            Some(phone) => (NodeID { data: NodeData::Phoneme(*phone), part }, phonemes.split_at(1).1.iter().map(|phone| NodeID { data: NodeData::Phoneme(*phone), part }).collect()),
-            None => return,
+        let (mut cur_id, mut node_ids): (NodeID, Vec<NodeID>) = match (phonemes.get(0), part) {
+            (Some(phone), SyllablePart::Onset | SyllablePart::Nucleus) => (
+                NodeID { data: NodeData::Phoneme(*phone), part }, 
+                phonemes
+                    .split_at(1).1
+                    .iter()
+                    .map(|phone| NodeID { data: NodeData::Phoneme(*phone), part })
+                    .collect()
+            ),
+            (Some(phone), SyllablePart::Coda { layer: _ }) => (
+                NodeID { data: NodeData::Phoneme(*phone), part: SyllablePart::Coda { layer: 1 } }, 
+                phonemes
+                    .split_at(1).1
+                    .iter()
+                    .enumerate()
+                    .map(|(i, phone)| NodeID { data: NodeData::Phoneme(*phone), part: SyllablePart::Coda { layer: i + 2 } })
+                    .collect()
+            ),
+            (None, _) => return,
         };
+        
         node_ids.push(match part.next() {
-            Some(next_part) => NodeID { data: next, part: next_part },
-            None => NodeID { data: NodeData::Stop, part: SyllablePart::Coda },
+            Some(SyllablePart::Coda { layer: _ }) => NodeID { data: next, part: SyllablePart::Coda { layer: node_ids.len() + 1 } },
+            Some(SyllablePart::Nucleus | SyllablePart::Onset) => NodeID { data: next, part: part.next().unwrap() },
+            None => NodeID { data: NodeData::Stop, part: SyllablePart::Coda { layer: 0 } },
         });
 
         for next_id in node_ids {
@@ -209,7 +227,6 @@ impl SonorityGraph {
     fn eval(&self, result: &mut SonorityGraphResult, cur_id: NodeID, mut rng: &mut ThreadRng) {
         let cur_node = self.get_node_unchecked(cur_id);
         
-        // println!("{:?}, {:?}", cur_id.data, cur_id.part);
         let edge = Self::weighted_random_choice(cur_node.outs.iter().map(|edge| (edge.count, edge.clone())).collect(), &mut rng);
         let Some(next_node) = self.get_node(edge.to) else { return };
         
