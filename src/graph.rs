@@ -152,12 +152,11 @@ impl SonorityGraph {
     }
     fn update_graph_part(&mut self, part: SyllablePart, phonemes: Vec<Phoneme>, next: NodeData) {
         if part == SyllablePart::Onset {
-            let node_data = match phonemes.get(0) {
-                Some(phone) => NodeData::Phoneme(*phone),
-                None => next,
-            };
             let from_node_id = NodeID { data: NodeData::Start, part };
-            let to_node_id = NodeID { data: node_data, part };
+            let to_node_id = match phonemes.get(0) {
+                Some(phone) => NodeID { data: NodeData::Phoneme(*phone), part },
+                None => NodeID { data: next, part: SyllablePart::Nucleus },
+            };
             self.add_node(from_node_id);
             self.add_node(to_node_id);
             self.add_edge(from_node_id, to_node_id);
