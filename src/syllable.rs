@@ -1,6 +1,9 @@
 use std::ops::{Index, IndexMut};
 
-use crate::phoneme::Phoneme;
+use regex::Regex;
+use serde::{Deserialize, Serialize};
+
+use crate::phoneme::{Phoneme, SyllablePart};
 
 
 const RESPELL_KEY: [[&'static str; 2]; 68]  = [
@@ -93,6 +96,7 @@ const SPECIAL_ENDERS: [[&'static str; 2]; 3] = [
 ];
 
 
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Syllable {
     phonemes: Vec<Phoneme>,
 }
@@ -102,10 +106,13 @@ impl Syllable {
         Self { phonemes }
     }
 
-    pub fn from_arpabet(arpabet: &'static str) -> Self {
+    pub fn from_arpabet(arpabet: &str) -> Self {
         let mut phonemes = Vec::new();
         for phoneme in arpabet.split(' ') {
-            phonemes.push(Phoneme::from_arpabet(phoneme));
+            if let Some(caps) = Regex::new(r"^([A-Z]+)\d*$").unwrap().captures(phoneme) {
+                let phone = Phoneme::from_arpabet(caps.get(1).unwrap().as_str());
+                phonemes.push(phone);
+            }
         }
         Syllable::from_phonemes(phonemes)
     }
@@ -150,6 +157,46 @@ impl Syllable {
         };
 
         result
+    }
+
+    /// Returns a tuple where the first element is the onset, 
+    /// the second is the nucleus, and the third is the coda. 
+    /// 
+    /// Returns none if the syllable is invalid (the coda has a vowel in it or there is no vowel at all). 
+    pub fn split(&self) -> Option<(Vec<Phoneme>, Vec<Phoneme>, Vec<Phoneme>)> {
+        let mut onset = Vec::new();
+        let mut vowel = Vec::new();
+        let mut coda = Vec::new();
+        let mut state = SyllablePart::Onset;
+
+        for phone in self.phonemes.iter() {
+            if state == SyllablePart::Onset {
+                if phone.is_consonant() {
+                    onset.push(phone.clone());
+                } else if phone.is_vowel() {
+                    vowel.push(phone.clone());
+                    state = SyllablePart::Nucleus;
+                    continue;
+                } else {
+                    return None;
+                }
+            } else if state == SyllablePart::Nucleus {
+                if phone.is_vowel() {
+                    vowel.push(phone.clone());
+                } else {
+                    coda.push(phone.clone());
+                    state = SyllablePart::Coda;
+                }
+            } else { // state == SyllablePart::Coda
+                if phone.is_consonant() {
+                    coda.push(phone.clone());
+                } else {
+                    return None;
+                }
+            }
+        }
+
+        return Some((onset, vowel, coda));
     }
 }
 

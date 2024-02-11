@@ -1,3 +1,6 @@
+use serde::{Deserialize, Serialize};
+
+#[derive(Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub enum Phoneme {
     AA,
     AE,
@@ -29,7 +32,6 @@ pub enum Phoneme {
     EN,
     F,
     G,
-    HH,
     H,
     JH,
     K,
@@ -87,7 +89,7 @@ impl Phoneme {
             "EN" => Self::EN,
             "F" => Self::F,
             "G" => Self::G,
-            "HH" => Self::HH,
+            "HH" => Self::H,
             "H" => Self::H,
             "JH" => Self::JH,
             "K" => Self::K,
@@ -110,7 +112,121 @@ impl Phoneme {
             "Z" => Self::Z,
             "ZH" => Self::ZH,
 
-            _ => panic!("Could not convert {} to IPA", arpabet),
+            _ => panic!("Could not convert {} to a phoneme", arpabet),
+        }
+    }
+
+    pub fn to_arpabet(self) -> &'static str {
+        match self {
+            Self::AA => "AA",
+            Self::AE => "AE",
+            Self::AH => "AH",
+            Self::AO => "AO",
+            Self::AW => "AW",
+            Self::AX => "AX",
+            Self::AXR => "AXR",
+            Self::AY => "AY",
+            Self::EH => "EH",
+            Self::ER => "ER",
+            Self::EY => "EY",
+            Self::IH => "IH",
+            Self::IX => "IX",
+            Self::IY => "IY",
+            Self::OW => "OW",
+            Self::OY => "OY",
+            Self::UH => "UH",
+            Self::UW => "UW",
+            Self::UX => "UX",
+
+            Self::B => "B",
+            Self::CH => "CH",
+            Self::D => "D",
+            Self::DH => "DH",
+            Self::DX => "DX",
+            Self::EL => "EL",
+            Self::EM => "EM",
+            Self::EN => "EN",
+            Self::F => "F",
+            Self::G => "G",
+            Self::H => "H",
+            Self::JH => "JH",
+            Self::K => "K",
+            Self::L => "L",
+            Self::M => "M",
+            Self::N => "N",
+            Self::NG => "NG",
+            Self::NX => "NX",
+            Self::P => "P",
+            Self::Q => "Q",
+            Self::R => "R",
+            Self::S => "S",
+            Self::SH => "SH",
+            Self::T => "T",
+            Self::TH => "TH",
+            Self::V => "V",
+            Self::W => "W",
+            Self::WH => "WH",
+            Self::Y => "Y",
+            Self::Z => "Z",
+            Self::ZH => "ZH",
+        }
+    }
+
+    pub fn from_ipa(ipa: &str) -> Self {
+        match ipa {
+            "ɑ" => Self::AA, // ɑ or ɒ
+            "æ" => Self::AE,
+            "ʌ" => Self::AH,
+            "ɔ" => Self::AO,
+            "aʊ" => Self::AW,
+            "əɹ" => Self::AX, // ɚ
+            "ə" => Self::AXR,
+            "aɪ" => Self::AY,
+            "ɛ" => Self::EH,
+            "ɛɹ" => Self::ER, // ɝ
+            "eɪ" => Self::EY,
+            "ɪ" => Self::IH,
+            "ɨ" => Self::IX,
+            "i" => Self::IY,
+            "oʊ" => Self::OW,
+            "ɔɪ" => Self::OY,
+            "ʊ" => Self::UH,
+            "u" => Self::UW,
+            "ʉ" => Self::UX,
+
+            "b" => Self::B,
+            "tʃ" => Self::CH,
+            "d" => Self::D,
+            "ð" => Self::DH,
+            "ɾ" => Self::DX,
+            "l̩" => Self::EL,
+            "m̩" => Self::EM,
+            "n̩" => Self::EN,
+            "f" => Self::F,
+            "ɡ" => Self::G,
+            "h" => Self::H,
+            "dʒ" => Self::JH,
+            "k" => Self::K,
+            "l" => Self::L,
+            "m" => Self::M,
+            "n" => Self::N,
+            "ŋ" => Self::NG,
+            "ɾ̃" => Self::NX,
+            "p" => Self::P,
+            "ʔ" => Self::Q,
+            "ɹ" => Self::R,
+            "s" => Self::S,
+            "ʃ" => Self::SH,
+            "t" => Self::T,
+            "θ" => Self::TH,
+            "v" => Self::V,
+            "w" => Self::W,
+            "ʍ" => Self::WH,
+            "j" => Self::Y,
+            "z" => Self::Z,
+            "ʒ" => Self::ZH,
+
+            _ => panic!("Could not convert {} to a phoneme", ipa),
         }
     }
 
@@ -146,7 +262,6 @@ impl Phoneme {
             Self::EN => "n̩",
             Self::F => "f",
             Self::G => "ɡ",
-            Self::HH => "h",
             Self::H => "h",
             Self::JH => "dʒ",
             Self::K => "k",
@@ -170,4 +285,40 @@ impl Phoneme {
             Self::ZH => "ʒ",
         }
     }
+
+    pub fn is_vowel(&self) -> bool {
+        match self {
+            Self::AA => true,
+            Self::AE => true,
+            Self::AH => true,
+            Self::AO => true,
+            Self::AW => true,
+            Self::AX => true,
+            Self::AXR => true,
+            Self::AY => true,
+            Self::EH => true,
+            Self::ER => true,
+            Self::EY => true,
+            Self::IH => true,
+            Self::IX => true,
+            Self::IY => true,
+            Self::OW => true,
+            Self::OY => true,
+            Self::UH => true,
+            Self::UW => true,
+            Self::UX => true,
+            _ => false
+        }
+    }
+    pub fn is_consonant(&self) -> bool {
+        !self.is_vowel()
+    }
+}
+
+
+#[derive(PartialEq, Eq, Clone, Copy, Hash, Debug, Serialize, Deserialize)]
+pub enum SyllablePart {
+    Onset,
+    Nucleus,
+    Coda
 }

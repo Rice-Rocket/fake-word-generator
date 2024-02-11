@@ -1,15 +1,15 @@
 pub mod phoneme;
 pub mod syllable;
+pub mod syllablize;
+pub mod graph;
 
 
-use phoneme::Phoneme;
+use graph::SonorityGraph;
 use syllable::Syllable;
+use syllablize::SyllablizedPhonemes;
 
 
 fn main() {
-    let syllable = Syllable::from_arpabet("HH AW S");
-
-    let spelling = syllable.to_english();
-
-    println!("{}", spelling);
+    let phones = SyllablizedPhonemes::new();
+    let graph = SonorityGraph::new(phones);
 }
