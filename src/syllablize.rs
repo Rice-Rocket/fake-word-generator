@@ -21,12 +21,11 @@ impl SyllablizedPhonemes {
     const CMU_FILE: &'static str = "assets/resources/cmudict.0.6-syl.txt";
 
     pub fn new() -> Self {
-        println!("");
         if let Ok(contents) = fs::read(Self::cache_file()) {
-            cprintln!("<green, bold>Reading</green, bold> Syllablized Phonemes Cache File...");
+            cprintln!("  <bold>[1/3]</bold> <green, bold>Reading</green, bold> Syllablized Phonemes Cache File...");
             Self::load(contents)
         } else {
-            cprintln!("<yellow, bold>Cache File Not Found</yellow, bold>, Regenerating Syllablized Phonemes...");
+            cprintln!("  <bold>[1/3]</bold> <yellow, bold>Cache File Not Found</yellow, bold>, Regenerating Syllablized Phonemes...");
             Self::generate()
         }
     }
@@ -44,7 +43,7 @@ impl SyllablizedPhonemes {
     fn load(contents: Vec<u8>) -> Self {
         let de: SyllablizedPhonemes = ron::de::from_bytes(contents.as_slice())
             .expect("Failed to parse file");
-        cprintln!("<green, bold>Finished</green, bold> Reading Syllablized Phonemes Cache File");
+        cprintln!("  <bold>[1/3]</bold> <green, bold>Finished</green, bold> Reading Syllablized Phonemes Cache File");
         de
     }
 
@@ -61,18 +60,18 @@ impl SyllablizedPhonemes {
     }
 
     fn generate() -> Self {
-        cprintln!("  <bold>[1/4]</bold> <green, bold>Reading</green, bold> Word Frequencies...");
+        cprintln!("    <bold>[1/4]</bold> <green, bold>Reading</green, bold> Word Frequencies...");
         let word_freqs = Self::load_word_frequencies();
         let word_syllables_mutex: Arc<Mutex<HashMap<String, Vec<Syllable>>>> = Arc::new(Mutex::new(HashMap::new()));
 
-        cprintln!("  <bold>[2/4]</bold> <green, bold>Reading</green, bold> CMU Dictionary...");
+        cprintln!("    <bold>[2/4]</bold> <green, bold>Reading</green, bold> CMU Dictionary...");
         let cmu_file = fs::read_to_string(Self::cmu_file())
             .expect("Failed to load cmu file");
         let lines = cmu_file.lines();
 
-        cprintln!("  <bold>[3/4]</bold> <green, bold>Parsing</green, bold> CMU Dictionary...");
+        cprintln!("    <bold>[3/4]</bold> <green, bold>Parsing</green, bold> CMU Dictionary...");
         let bar = ProgressBar::new(cmu_file.lines().count() as u64)
-            .with_style(ProgressStyle::with_template("    [{human_pos}/{human_len} ({percent}%)] | Elapsed: {elapsed} | ETA: {eta} {bar:50.green/gray}").unwrap());
+            .with_style(ProgressStyle::with_template("      [{human_pos}/{human_len} ({percent}%)] | Elapsed: {elapsed} | ETA: {eta} {bar:50.green/gray}").unwrap());
 
         lines.par_bridge().progress_with(bar).for_each(|line| {
             if line.starts_with("#") { return };
@@ -107,13 +106,12 @@ impl SyllablizedPhonemes {
             .map(|(k, v)| (k.clone(), v.clone()))
             .collect::<Vec<(String, Vec<Syllable>)>>());
 
-        cprintln!("  <bold>[4/4]</bold> <green, bold>Writing</green, bold> Syllablized Phonemes to File...");
+        cprintln!("    <bold>[4/4]</bold> <green, bold>Writing</green, bold> Syllablized Phonemes to File...");
         let syl_phones = SyllablizedPhonemes { words: ordered_words };
         let mut file = File::create(Self::cache_file()).unwrap();
         file.write_all(ron::ser::to_string_pretty(&syl_phones, ron::ser::PrettyConfig::default()).unwrap().as_bytes())
             .expect("Failed to write to file");
 
-        cprintln!("<green, bold>Finished</green, bold> Generating Syllable Phonemes");
         syl_phones
     }
 }

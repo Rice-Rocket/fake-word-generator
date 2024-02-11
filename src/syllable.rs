@@ -102,6 +102,13 @@ pub struct Syllable {
 }
 
 impl Syllable {
+    pub fn new(phonemes: Vec<Phoneme>) -> Self {
+        Self { phonemes }
+    }
+    pub fn empty() -> Self {
+        Self { phonemes: vec![] }
+    }
+
     pub fn from_phonemes(phonemes: Vec<Phoneme>) -> Self {
         Self { phonemes }
     }
@@ -157,6 +164,10 @@ impl Syllable {
         };
 
         result
+    }
+
+    pub fn add_phoneme(&mut self, phoneme: Phoneme) {
+        self.phonemes.push(phoneme);
     }
 
     /// Returns a tuple where the first element is the onset, 

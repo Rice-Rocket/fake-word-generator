@@ -12,3 +12,4 @@ regex = "1.10.3"
 color-print = "0.3.5"
 indicatif = { version = "0.17.8", features = [ "rayon" ] }
 rayon = "1.8.1"
+rand = "0.8.5"

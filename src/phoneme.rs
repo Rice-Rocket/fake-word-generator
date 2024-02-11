@@ -322,3 +322,13 @@ pub enum SyllablePart {
     Nucleus,
     Coda
 }
+
+impl SyllablePart {
+    pub fn next(self) -> Option<Self> {
+        match self {
+            Self::Onset => Some(Self::Nucleus),
+            Self::Nucleus => Some(Self::Coda),
+            Self::Coda => None,
+        }
+    }
+}

@@ -5,11 +5,10 @@ pub mod graph;
 
 
 use graph::SonorityGraph;
-use syllable::Syllable;
-use syllablize::SyllablizedPhonemes;
 
 
 fn main() {
-    let phones = SyllablizedPhonemes::new();
-    let graph = SonorityGraph::new(phones);
+    let graph = SonorityGraph::new();
+    let res = graph.evaluate();
+    println!("{}, ({})", res.0.clone().to_ipa(), res.0.to_english())
 }
