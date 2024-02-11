@@ -65,7 +65,7 @@ impl SonorityGraph {
         env::current_dir().unwrap().to_str().unwrap().to_owned() + "/" + Self::CACHE_FILE
     }
 
-    pub fn new() -> Self {
+    pub fn new(syl_phones: &SyllablizedPhonemes) -> Self {
         let mut graph = Self { nodes: HashMap::new() };
         
         println!();
@@ -73,9 +73,8 @@ impl SonorityGraph {
             cprintln!("<green, bold>Reading</green, bold> Sonority Graph Cache File...");
             graph.load(contents);
         } else {
-            cprintln!("<yellow, bold>Cache File Not Found</yellow, bold>, Regenerating Sonority Graph...");
-            let syllablized_phonemes = SyllablizedPhonemes::new();
-            graph.build(syllablized_phonemes);
+            cprintln!("<yellow, bold>Cache File Not Found</yellow, bold>, Rebuilding Sonority Graph...");
+            graph.build(syl_phones);
             cprintln!("<green, bold>Finished</green, bold> Building Sonority Graph");
         }
         println!();
@@ -124,7 +123,7 @@ impl SonorityGraph {
         *self = de;
     }
 
-    fn build(&mut self, syl_phones: SyllablizedPhonemes) {
+    fn build(&mut self, syl_phones: &SyllablizedPhonemes) {
         cprintln!("  <bold>[2/3]</bold> <green, bold>Building</green, bold> Sonority Graph...");
 
         let bar = ProgressBar::new(syl_phones.words.len() as u64)

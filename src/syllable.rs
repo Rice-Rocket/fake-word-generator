@@ -169,6 +169,14 @@ impl Syllable {
     pub fn add_phoneme(&mut self, phoneme: Phoneme) {
         self.phonemes.push(phoneme);
     }
+    
+    pub fn last_phoneme(&self) -> Phoneme {
+        self.phonemes.last().unwrap().clone()
+    }
+
+    pub fn first_phoneme(&self) -> Phoneme {
+        self.phonemes.first().unwrap().clone()
+    }
 
     /// Returns a tuple where the first element is the onset, 
     /// the second is the nucleus, and the third is the coda. 

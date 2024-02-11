@@ -2,16 +2,20 @@ pub mod phoneme;
 pub mod syllable;
 pub mod syllablize;
 pub mod graph;
+// pub mod wordgen;
+pub mod connections;
 
 
 #[cfg(target_os = "macos")]
 use cocoa_foundation::base::id;
 #[cfg(target_os = "macos")]
 use cocoa_foundation::foundation::NSRunLoop;
+use connections::SyllableConnections;
 #[cfg(target_os = "macos")]
 use objc::{msg_send, sel, sel_impl};
 
 use graph::SonorityGraph;
+use syllablize::SyllablizedPhonemes;
 // use tts_rust::{tts::GTTSClient, languages::Languages};
 use tts::*;
 
@@ -22,7 +26,9 @@ fn main() {
     //     language: Languages::English,
     //     tld: "com",
     // };
-    let graph = SonorityGraph::new();
+    let syl_phones = SyllablizedPhonemes::new();
+    let connections = SyllableConnections::new(&syl_phones);
+    let graph = SonorityGraph::new(&syl_phones);
 
     let mut tts = Tts::default().unwrap();
     tts.set_voice(&tts.voices().unwrap()[55]).unwrap();
