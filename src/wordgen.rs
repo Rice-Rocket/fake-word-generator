@@ -1,8 +1,29 @@
 use std::collections::HashMap;
 
-use rand::{rngs::ThreadRng, thread_rng};
+use rand::{rngs::ThreadRng, thread_rng, Rng};
 
 use crate::{connections::SyllableConnections, graph::{NodeData, SonorityGraph}, logger::{TerminalLogger, WorkIndex, WorkMessage}, syllablize::SyllablizedPhonemes, word::Word};
+
+
+pub struct WordGenConfig {
+    /// Determines the rate at which the number of syllables in a word decays. 
+    /// Larger values mean more a consistent number of syllables. 
+    pub word_length_decay: f32,
+    /// Determines the average number of syllables in a word. Larger values mean longer words. 
+    pub word_length_bias: f32,
+    /// Determines the maximum number of syllables a word can have. 
+    pub word_length_max: usize,
+}
+
+impl Default for WordGenConfig {
+    fn default() -> Self {
+        Self {
+            word_length_decay: 1.5,
+            word_length_bias: 1.5,
+            word_length_max: 10,
+        }
+    }
+}
 
 
 pub struct FakeWordGenerator {
@@ -10,10 +31,11 @@ pub struct FakeWordGenerator {
     pub sonority_graph: SonorityGraph,
     pub syllable_connections: SyllableConnections,
     pub rng: ThreadRng,
+    pub config: WordGenConfig,
 }
 
 impl FakeWordGenerator {
-    pub fn new() -> Self {
+    pub fn new(config: WordGenConfig) -> Self {
         let mut logger = TerminalLogger::new();
 
         logger.initialize();
@@ -181,14 +203,20 @@ impl FakeWordGenerator {
             sonority_graph,
             syllable_connections,
             rng: thread_rng(),
+            config,
         }
     }
 
+    fn get_new_syllable_chance(&self, i: usize) -> f32 {
+        self.config.word_length_decay.powf(-(i as f32)) * self.config.word_length_bias
+    }
     pub fn generate_word(&mut self) -> Word {
         let mut cur_phone = self.syllable_connections.evaluate(NodeData::Start, &mut self.rng);
         let mut word = Word::empty();
 
-        for _ in 0..3 {
+        let mut new_syl_chance = 1.0;
+        let mut i = 0usize;
+        while new_syl_chance > self.rng.gen_range(0f32..1f32) {
             match cur_phone {
                 NodeData::Phoneme(phone) => {
                     let next_syl = self.sonority_graph.evaluate_from_start(phone, &mut self.rng).0;
@@ -198,6 +226,9 @@ impl FakeWordGenerator {
                 NodeData::Start => {},
                 NodeData::Stop => { break },
             }
+            new_syl_chance = self.get_new_syllable_chance(i);
+            i += 1;
+            if i > self.config.word_length_max { break };
         }
 
         word

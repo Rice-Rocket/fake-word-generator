@@ -10,11 +10,12 @@ pub mod utils;
 pub mod logger;
 
 use tts_rust::tts::GTTSClient;
-use wordgen::FakeWordGenerator;
+use wordgen::{FakeWordGenerator, WordGenConfig};
 
 
 fn main() {
-    let mut generator = FakeWordGenerator::new();
+    let config = WordGenConfig::default();
+    let mut generator = FakeWordGenerator::new(config);
     
     let tts = GTTSClient::default();
 
