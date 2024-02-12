@@ -2,6 +2,7 @@ use core::fmt;
 
 use crate::syllable::Syllable;
 
+#[derive(Clone)]
 pub struct Word {
     pub syllables: Vec<Syllable>,
 }
