@@ -1,10 +1,10 @@
 use std::{collections::{hash_map::Entry, HashMap}, env, fs::{self, File}, io::Write, path::Path};
 
-use indicatif::{ProgressBar, ProgressIterator, ProgressStyle};
-use rand::{rngs::ThreadRng, thread_rng, Rng};
+use indicatif::ProgressIterator;
+use rand::rngs::ThreadRng;
 use serde::{Deserialize, Serialize};
 
-use crate::{logger::{ProgressBarElements, TerminalLogger, WorkIndex, WorkMessage}, phoneme::{Phoneme, SyllablePart}, syllable::Syllable, syllablize::SyllablizedPhonemes};
+use crate::{logger::{ProgressBarElements, TerminalLogger, WorkIndex, WorkMessage}, phoneme::{Phoneme, SyllablePart}, syllable::Syllable, syllablize::SyllablizedPhonemes, utils};
 
 #[derive(PartialEq, Eq, Hash, Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct NodeID {
@@ -203,46 +203,34 @@ impl SonorityGraph {
         }
     }
 
-    fn weighted_random_choice(a: Vec<(usize, SonorityGraphEdge)>, rng: &mut ThreadRng) -> SonorityGraphEdge {
-        let mut weights = Vec::new();
-
-        for i in 0..a.len() {
-            if i == 0 {
-                weights.push(a[i].0);
-            } else {
-                weights.push(a[i].0 + weights[i - 1]);
-            }
-        }
-
-        let rand = rng.gen_range(0..weights[weights.len() - 1]);
-        let mut i = 0;
-        for _ in 0..weights.len() {
-            if weights[i] > rand {
-                break;
-            }
-            i += 1;
-        }
-        return a[i].1.clone();
-    }
-    fn random_choice(a: Vec<(usize, SonorityGraphEdge)>, rng: &mut ThreadRng) -> SonorityGraphEdge {
-        let rand = rng.gen_range(0..a.len());
-        return a[rand].1.clone();
-    }
     fn eval(&self, result: &mut SonorityGraphResult, cur_id: NodeID, mut rng: &mut ThreadRng) {
         let cur_node = self.get_node_unchecked(cur_id);
-        
-        let edge = Self::weighted_random_choice(cur_node.outs.iter().map(|edge| (edge.count, edge.clone())).collect(), &mut rng);
+
+        let edge = utils::weighted_random_choice(&cur_node.outs.iter().map(|edge| (edge.count, edge.clone())).collect(), &mut rng);
         let Some(next_node) = self.get_node(edge.to) else { return };
         
         let should_continue = next_node.evaluate(result, edge.to);
         if !should_continue { return };
         self.eval(result, edge.to, &mut rng);
     }
-    pub fn evaluate(&self) -> SonorityGraphResult {
+    pub fn evaluate(&self, rng: &mut ThreadRng) -> SonorityGraphResult {
         let mut result = SonorityGraphResult(Syllable::empty());
-        let mut rng = thread_rng();
         let root_id = NodeID { data: NodeData::Start, part: SyllablePart::Onset };
-        self.eval(&mut result, root_id, &mut rng);
+        self.eval(&mut result, root_id, rng);
+        result
+    }
+    pub fn evaluate_from_start(&self, start: Phoneme, rng: &mut ThreadRng) -> SonorityGraphResult {
+        let mut result = SonorityGraphResult(Syllable::empty());
+        let root_id = NodeID {
+            data: NodeData::Phoneme(start), 
+            part: match start.is_vowel() {
+                true => SyllablePart::Nucleus,
+                false => SyllablePart::Onset,
+            }
+        };
+        let root_node = self.get_node_unchecked(root_id);
+        root_node.evaluate(&mut result, root_id);
+        self.eval(&mut result, root_id, rng);
         result
     }
 }

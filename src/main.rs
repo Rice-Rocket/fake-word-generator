@@ -5,6 +5,7 @@ pub mod graph;
 pub mod wordgen;
 pub mod connections;
 pub mod word;
+pub mod utils;
 
 pub mod logger;
 
@@ -26,7 +27,8 @@ use wordgen::FakeWordGenerator;
 
 
 fn main() {
-    let generator = FakeWordGenerator::new();
+    let mut generator = FakeWordGenerator::new();
+    println!("{}", generator.generate_word())
     
     // let mut tts = Tts::default().unwrap();
     // tts.set_voice(&tts.voices().unwrap()[55]).unwrap();

@@ -131,6 +131,15 @@ impl Syllable {
         };
         result
     }
+
+    pub fn to_arpabet(&self) -> String {
+        let mut result = String::new();
+        for phoneme in self.phonemes.iter() {
+            result += phoneme.to_arpabet();
+            result += " ";
+        };
+        result
+    }
     
     pub fn to_english(&self) -> String {
         let mut result = String::new();

@@ -1,12 +1,15 @@
-use std::{collections::HashMap, env, fs};
+use std::collections::HashMap;
 
-use crate::{connections::SyllableConnections, graph::SonorityGraph, logger::{TerminalLogger, WorkIndex, WorkMessage}, syllablize::SyllablizedPhonemes};
+use rand::{rngs::ThreadRng, thread_rng};
+
+use crate::{connections::SyllableConnections, graph::{NodeData, SonorityGraph}, logger::{TerminalLogger, WorkIndex, WorkMessage}, syllablize::SyllablizedPhonemes, word::Word};
 
 
 pub struct FakeWordGenerator {
     pub syllablized_phonemes: SyllablizedPhonemes,
     pub sonority_graph: SonorityGraph,
     pub syllable_connections: SyllableConnections,
+    pub rng: ThreadRng,
 }
 
 impl FakeWordGenerator {
@@ -177,6 +180,26 @@ impl FakeWordGenerator {
             syllablized_phonemes,
             sonority_graph,
             syllable_connections,
+            rng: thread_rng(),
         }
+    }
+
+    pub fn generate_word(&mut self) -> Word {
+        let mut cur_phone = self.syllable_connections.evaluate(NodeData::Start, &mut self.rng);
+        let mut word = Word::empty();
+
+        for _ in 0..3 {
+            match cur_phone {
+                NodeData::Phoneme(phone) => {
+                    let next_syl = self.sonority_graph.evaluate_from_start(phone, &mut self.rng).0;
+                    word.add_syllable(next_syl.clone());
+                    cur_phone = self.syllable_connections.evaluate(NodeData::Phoneme(next_syl.last_phoneme()), &mut self.rng);
+                },
+                NodeData::Start => {},
+                NodeData::Stop => { break },
+            }
+        }
+
+        word
     }
 }

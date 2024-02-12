@@ -1,13 +1,14 @@
 use std::{collections::{hash_map::Entry, HashMap}, env, fs::{self, File}, io::Write, path::Path};
 
 use indicatif::ProgressIterator;
+use rand::rngs::ThreadRng;
 use serde::{Deserialize, Serialize};
 
-use crate::{graph::NodeData, logger::{ProgressBarElements, TerminalLogger, WorkIndex, WorkMessage}, syllablize::SyllablizedPhonemes};
+use crate::{graph::NodeData, logger::{ProgressBarElements, TerminalLogger, WorkIndex, WorkMessage}, syllablize::SyllablizedPhonemes, utils};
 
 #[derive(Serialize, Deserialize)]
 pub struct SyllableConnections {
-    pub connections: HashMap<NodeData, (NodeData, usize)>,
+    pub connections: HashMap<NodeData, Vec<(usize, NodeData)>>,
 }
 
 impl SyllableConnections {
@@ -76,13 +77,26 @@ impl SyllableConnections {
         logger.finish_work(writing_work);
     }
 
+    pub fn evaluate(&self, node_data: NodeData, rng: &mut ThreadRng) -> NodeData {
+        utils::weighted_random_choice(self.connections.get(&node_data).unwrap(), rng)
+    }
+
     fn add_edge(&mut self, from: NodeData, to: NodeData) {
         match self.connections.entry(from) {
             Entry::Vacant(entry) => {
-                entry.insert((to, 1));
+                entry.insert(vec![(1, to)]);
             },
             Entry::Occupied(mut entry) => {
-                entry.get_mut().1 += 1;
+                let mut has_edge = false;
+                for edge in entry.get_mut().iter_mut() {
+                    if edge.1 == to {
+                        has_edge = true;
+                        edge.0 += 1;
+                    }
+                }
+                if !has_edge {
+                    entry.get_mut().push((1, to));
+                }
             }
         }
     }
